@@ -15,6 +15,7 @@ export async function POST(req: Request) {
     );
   }
 
+  console.log(WEBHOOK_SECRET);
   // Get the headers
   const headerPayload = headers();
   const svix_id = headerPayload.get("svix-id");
@@ -54,6 +55,8 @@ export async function POST(req: Request) {
   // Get the ID and type
   const { id } = evt.data;
   const eventType = evt.type;
+
+  console.log(evt.data);
 
   if (eventType === "user.created") {
     const { id, email_addresses, image_url, first_name, last_name, username } =
