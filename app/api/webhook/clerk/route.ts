@@ -15,7 +15,6 @@ export async function POST(req: Request) {
     );
   }
 
-  console.log(WEBHOOK_SECRET);
   // Get the headers
   const headerPayload = headers();
   const svix_id = headerPayload.get("svix-id");
@@ -56,66 +55,53 @@ export async function POST(req: Request) {
   const { id } = evt.data;
   const eventType = evt.type;
 
-  console.log(evt);
+  if (eventType === "user.created") {
+    const { id, email_addresses, image_url, first_name, last_name, username } =
+      evt.data;
 
-  try {
-    if (eventType === "user.created") {
-      const {
-        id,
-        email_addresses,
-        image_url,
-        first_name,
-        last_name,
-        username,
-      } = evt.data;
+    const user = {
+      clerkId: id,
+      email: email_addresses[0].email_address,
+      username: username || "user",
+      firstName: first_name,
+      lastName: last_name,
+      photo: image_url,
+    };
 
-      const user = {
-        clerkId: id,
-        email: email_addresses[0].email_address,
-        username: username || "user",
-        firstName: first_name,
-        lastName: last_name,
-        photo: image_url,
-      };
+    const newUser = await createUser(user);
 
-      const newUser = await createUser(user);
-      console.log("from clerk route", newUser);
-
-      if (newUser) {
-        await clerkClient.users.updateUserMetadata(id, {
-          publicMetadata: {
-            userId: newUser._id,
-          },
-        });
-      }
-
-      return NextResponse.json({ message: "OK", user: newUser });
+    if (newUser) {
+      await clerkClient.users.updateUserMetadata(id, {
+        publicMetadata: {
+          userId: newUser._id,
+        },
+      });
     }
 
-    if (eventType === "user.updated") {
-      const { id, image_url, first_name, last_name, username } = evt.data;
+    return NextResponse.json({ message: "OK", user: newUser });
+  }
 
-      const user = {
-        firstName: first_name,
-        lastName: last_name,
-        username: username!,
-        photo: image_url,
-      };
+  if (eventType === "user.updated") {
+    const { id, image_url, first_name, last_name, username } = evt.data;
 
-      const updatedUser = await updateUser(id, user);
+    const user = {
+      firstName: first_name,
+      lastName: last_name,
+      username: username!,
+      photo: image_url,
+    };
 
-      return NextResponse.json({ message: "OK", user: updatedUser });
-    }
+    const updatedUser = await updateUser(id, user);
 
-    if (eventType === "user.deleted") {
-      const { id } = evt.data;
+    return NextResponse.json({ message: "OK", user: updatedUser });
+  }
 
-      const deletedUser = await deleteUser(id!);
+  if (eventType === "user.deleted") {
+    const { id } = evt.data;
 
-      return NextResponse.json({ message: "OK", user: deletedUser });
-    }
-  } catch (e) {
-    console.log("try catch error", e);
+    const deletedUser = await deleteUser(id!);
+
+    return NextResponse.json({ message: "OK", user: deletedUser });
   }
 
   return new Response("", { status: 200 });
