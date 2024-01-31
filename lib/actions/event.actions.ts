@@ -21,6 +21,7 @@ const getCategoryByName = async (name: string) => {
   return Category.findOne({ name: { $regex: name, $options: "i" } });
 };
 
+//get data of user and catagory based on evnt id
 const populateEvent = (query: any) => {
   return query
     .populate({
